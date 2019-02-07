@@ -66,6 +66,7 @@ const handleFile = (file) => {
 	return Promise.resolve(file)
 		.then(getDataURLFromFile)
 		.then(getImageFromDataURL)
+		.then(resizeImage)
 		.then(getImageDataFromImage)
 		.then(processImageData);
 };
@@ -100,6 +101,29 @@ const getImageFromDataURL = (dataURL) => (
  * @param {Image} image
  * @returns {ImageData}
  */
+const resizeImage = (image) => {
+	const width = image.width;
+	const height = image.height;
+	if (width <= MAX_DIMENSION && height <= MAX_DIMENSION) {
+		return image;
+	}
+	const scale = MAX_DIMENSION / Math.max(width, height);
+	const scaledWidth = scale * width;
+	const scaledHeight = scale * height;
+	const canvas = document.createElement('canvas');
+	canvas.width = scaledWidth;
+	canvas.height = scaledHeight;
+	const ctx = canvas.getContext('2d');
+	ctx.drawImage(image, 0, 0, scaledWidth, scaledHeight);
+	const scaledImage = new Image(scaledWidth, scaledHeight);
+	scaledImage.src = canvas.toDataURL();
+	return scaledImage;
+};
+
+/**
+ * @param {Image} image
+ * @returns {ImageData}
+ */
 const getImageDataFromImage = (image) => {
 	const width = image.width;
 	const height = image.height;
@@ -116,13 +140,8 @@ const getImageDataFromImage = (image) => {
  */
 const processImageData = (imageData) => {
 	const amount = getAmount();
-	const imageWidth = imageData.width;
-	const imageHeight = imageData.height;
-	const resize = imageWidth > MAX_DIMENSION || imageHeight > MAX_DIMENSION;
-	const scale = resize ? MAX_DIMENSION / Math.max(imageWidth, imageHeight) : 1;
-	const width = scale * imageWidth;
-	const height = scale * imageHeight;
-	const getIndex = (x, y) => 4 * (y * width + x);
+	const width = imageData.width;
+	const height = imageData.height;
 	worker.postMessage({
 		type: 'filter',
 		data: imageData.data,
