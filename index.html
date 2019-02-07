@@ -67,7 +67,7 @@ const handleFile = (file) => {
 		.then(getDataURLFromFile)
 		.then(getImageFromDataURL)
 		.then(getImageDataFromImage)
-		.then(processImage);
+		.then(processImageData);
 };
 
 /**
@@ -114,7 +114,7 @@ const getImageDataFromImage = (image) => {
 /**
  * @param {Image} image
  */
-const processImage = (imageData) => {
+const processImageData = (imageData) => {
 	const amount = getAmount();
 	const imageWidth = imageData.width;
 	const imageHeight = imageData.height;
