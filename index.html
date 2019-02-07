@@ -4,17 +4,25 @@
 
 <title>Chromatic Aberration</title>
 
-<div>
-	<label for="file">File</label><br />
-	<input id="file" type="file" accept="image/*" />
-</div>
+<form id="settings">
+	<div>
+		<label for="file">File</label><br />
+		<input id="file" type="file" accept="image/*" />
+	</div>
 
-<br />
+	<br />
 
-<div>
-	<label for="amount">Amount</label><br />
-	<input id="amount" type="number" value="5" />
-</div>
+	<div>
+		<label for="amount">Amount</label><br />
+		<input id="amount" type="number" value="5" />
+	</div>
+
+	<br />
+
+	<div>
+		<button type="submit">Process</button>
+	</div>
+</form>
 
 <br />
 <hr />
@@ -35,19 +43,20 @@ worker.addEventListener('message', (e) => {
 	}
 });
 
+const form = document.querySelector('#settings');
 const fileInput = document.querySelector('#file');
-fileInput.addEventListener('change', (e) => {
-	e.preventDefault();
-	if (!fileInput.files) return;
-	const files = fileInput.files;
-	if (!files[0]) return;
-	const file = files[0];
-	handleFile(file);
-	fileInput.value = '';
-});
-
 const amountInput = document.querySelector('#amount');
+
+const getFile = () => fileInput.files[0];
 const getAmount = () => Number(amountInput.value);
+
+form.addEventListener('submit', (e) => {
+	e.preventDefault();
+	const file = getFile();
+	if (file) {
+		handleFile(file);
+	}
+});
 
 /**
  * @param {File} file
