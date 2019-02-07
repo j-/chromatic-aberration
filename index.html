@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<title>Chromatic Aberration</title>
+
+<div>
+	<label for="file">File</label><br />
+	<input id="file" type="file" accept="image/*" />
+</div>
+
+<br />
+
+<div>
+	<label for="amount">Amount</label><br />
+	<input id="amount" type="number" value="5" />
+</div>
+
+<br />
+<hr />
+<br />
+
+<div id="output"></div>
+
+<script>
+(() => {
+
+const CHANNEL_RED = 0;
+const CHANNEL_GREEN = 1;
+const CHANNEL_BLUE = 2;
+const CHANNEL_ALPHA = 3;
+
+window.addEventListener('dragover', (e) => {
+	e.preventDefault();
+});
+
+window.addEventListener('drop', (e) => {
+	e.preventDefault();
+	if (!e.dataTransfer) return;
+	const dataTransfer = e.dataTransfer;
+	if (!dataTransfer.files) return;
+	const files = dataTransfer.files;
+	if (!files[0]) return;
+	const file = files[0];
+	handleFile(file);
+});
+
+const fileInput = document.querySelector('#file');
+fileInput.addEventListener('change', (e) => {
+	e.preventDefault();
+	if (!fileInput.files) return;
+	const files = fileInput.files;
+	if (!files[0]) return;
+	const file = files[0];
+	handleFile(file);
+	fileInput.value = '';
+});
+
+const amountInput = document.querySelector('#amount');
+const getAmount = () => Number(amountInput.value);
+
+/**
+ * @param {File} file
+ * @returns {Promise<void>}
+ */
+const handleFile = (file) => {
+	return Promise.resolve(file)
+		.then(getDataURLFromFile)
+		.then(getImageFromDataURL)
+		.then(processImage)
+		.then(outputImage);
+};
+
+/**
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+const getDataURLFromFile = (file) => (
+	new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.addEventListener('load', () => resolve(reader.result));
+		reader.addEventListener('error', reject);
+		reader.readAsDataURL(file);
+	})
+);
+
+/**
+ * @param {string} dataURL
+ * @returns {Image}
+ */
+const getImageFromDataURL = (dataURL) => {
+	const image = new Image();
+	image.src = dataURL;
+	return image;
+};
+
+/**
+ * @param {Image} image
+ * @returns {Promise<Image>}
+ */
+const processImage = (image) => {
+	const amount = getAmount();
+	const amountAbs = Math.abs(amount);
+	const width = image.width;
+	const height = image.height;
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext('2d');
+	if (!ctx) {
+		throw new Error('Could not get context for canvas');
+	}
+	ctx.drawImage(image, 0, 0);
+	const getIndex = (x, y) => 4 * (y * width + x);
+	const imageData = ctx.getImageData(0, 0, width, height);
+	const original = imageData.data;
+	const copy = [...original];
+	for (let x = amountAbs; x < width - amountAbs; x++) {
+		for (let y = 0; y < height; y++) {
+			const i = getIndex(x, y);
+			original[i + CHANNEL_RED] = copy[getIndex(x - amount, y) + CHANNEL_RED];
+			original[i + CHANNEL_GREEN] = copy[i + CHANNEL_GREEN];
+			original[i + CHANNEL_BLUE] = copy[getIndex(x + amount, y) + CHANNEL_BLUE];
+			original[i + CHANNEL_ALPHA] = copy[i + CHANNEL_ALPHA];
+		}
+	}
+	ctx.clearRect(0, 0, width, height);
+	ctx.putImageData(imageData, 0, 0);
+	const newImage = new Image();
+	newImage.src = canvas.toDataURL();
+	return new Promise((resolve) => {
+		newImage.addEventListener('load', () => {
+			resolve(newImage);
+		});
+	});
+};
+
+/**
+ * @param {Image} image
+ */
+const outputImage = (image) => {
+	document.querySelector('#output').appendChild(image);
+};
+
+})();
+</script>
+
+<style>
+#output img {
+	display: block;
+	margin: 1em 0;
+}
+</style>
