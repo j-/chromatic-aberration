@@ -66,6 +66,7 @@ const handleFile = (file) => {
 	return Promise.resolve(file)
 		.then(getDataURLFromFile)
 		.then(getImageFromDataURL)
+		.then(getImageDataFromImage)
 		.then(processImage);
 };
 
@@ -97,25 +98,31 @@ const getImageFromDataURL = (dataURL) => (
 
 /**
  * @param {Image} image
+ * @returns {ImageData}
  */
-const processImage = (image) => {
-	const amount = getAmount();
-	const imageWidth = image.width;
-	const imageHeight = image.height;
-	const resize = imageWidth > MAX_DIMENSION || imageHeight > MAX_DIMENSION;
-	const scale = resize ? MAX_DIMENSION / Math.max(imageWidth, imageHeight) : 1;
-	const width = scale * imageWidth;
-	const height = scale * imageHeight;
+const getImageDataFromImage = (image) => {
+	const width = image.width;
+	const height = image.height;
 	const canvas = document.createElement('canvas');
 	canvas.width = width;
 	canvas.height = height;
 	const ctx = canvas.getContext('2d');
-	if (!ctx) {
-		throw new Error('Could not get context for canvas');
-	}
 	ctx.drawImage(image, 0, 0, width, height);
+	return ctx.getImageData(0, 0, width, height);
+};
+
+/**
+ * @param {Image} image
+ */
+const processImage = (imageData) => {
+	const amount = getAmount();
+	const imageWidth = imageData.width;
+	const imageHeight = imageData.height;
+	const resize = imageWidth > MAX_DIMENSION || imageHeight > MAX_DIMENSION;
+	const scale = resize ? MAX_DIMENSION / Math.max(imageWidth, imageHeight) : 1;
+	const width = scale * imageWidth;
+	const height = scale * imageHeight;
 	const getIndex = (x, y) => 4 * (y * width + x);
-	const imageData = ctx.getImageData(0, 0, width, height);
 	worker.postMessage({
 		type: 'filter',
 		data: imageData.data,
