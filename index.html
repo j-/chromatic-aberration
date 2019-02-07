@@ -30,6 +30,8 @@ const CHANNEL_GREEN = 1;
 const CHANNEL_BLUE = 2;
 const CHANNEL_ALPHA = 3;
 
+const MAX_DIMENSION = 1000;
+
 window.addEventListener('dragover', (e) => {
 	e.preventDefault();
 });
@@ -101,8 +103,12 @@ const getImageFromDataURL = (dataURL) => {
 const processImage = (image) => {
 	const amount = getAmount();
 	const amountAbs = Math.abs(amount);
-	const width = image.width;
-	const height = image.height;
+	const imageWidth = image.width;
+	const imageHeight = image.height;
+	const resize = imageWidth > MAX_DIMENSION || imageHeight > MAX_DIMENSION;
+	const scale = resize ? MAX_DIMENSION / Math.max(imageWidth, imageHeight) : 1;
+	const width = scale * imageWidth;
+	const height = scale * imageHeight;
 	const canvas = document.createElement('canvas');
 	canvas.width = width;
 	canvas.height = height;
@@ -110,7 +116,7 @@ const processImage = (image) => {
 	if (!ctx) {
 		throw new Error('Could not get context for canvas');
 	}
-	ctx.drawImage(image, 0, 0);
+	ctx.drawImage(image, 0, 0, width, height);
 	const getIndex = (x, y) => 4 * (y * width + x);
 	const imageData = ctx.getImageData(0, 0, width, height);
 	const original = imageData.data;
