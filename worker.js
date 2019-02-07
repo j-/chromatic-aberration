@@ -5,7 +5,7 @@ onmessage = (e) => {
 		case 'filter':
 			postMessage({
 				type: 'result',
-				data: filter(data.data, data.options),
+				imageData: filter(data.imageData, data.options),
 				options: data.options,
 			});
 			break;
@@ -19,11 +19,12 @@ const CHANNEL_GREEN = 1;
 const CHANNEL_BLUE = 2;
 const CHANNEL_ALPHA = 3;
 
-const filter = (original, options) => {
+const filter = (imageData, options) => {
 	const amount = options.amount;
 	const amountAbs = Math.abs(amount);
-	const width = options.width;
-	const height = options.height;
+	const original = imageData.data;
+	const width = imageData.width;
+	const height = imageData.height;
 	const copy = [...original];
 	const getIndex = (x, y) => 4 * (y * width + x);
 	for (let x = amountAbs; x < width - amountAbs; x++) {
@@ -35,5 +36,5 @@ const filter = (original, options) => {
 			original[i + CHANNEL_ALPHA] = copy[i + CHANNEL_ALPHA];
 		}
 	}
-	return original;
+	return imageData;
 };
