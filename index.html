@@ -35,21 +35,6 @@ worker.addEventListener('message', (e) => {
 	}
 });
 
-window.addEventListener('dragover', (e) => {
-	e.preventDefault();
-});
-
-window.addEventListener('drop', (e) => {
-	e.preventDefault();
-	if (!e.dataTransfer) return;
-	const dataTransfer = e.dataTransfer;
-	if (!dataTransfer.files) return;
-	const files = dataTransfer.files;
-	if (!files[0]) return;
-	const file = files[0];
-	handleFile(file);
-});
-
 const fileInput = document.querySelector('#file');
 fileInput.addEventListener('change', (e) => {
 	e.preventDefault();
