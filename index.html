@@ -25,12 +25,15 @@
 <script>
 (() => {
 
-const CHANNEL_RED = 0;
-const CHANNEL_GREEN = 1;
-const CHANNEL_BLUE = 2;
-const CHANNEL_ALPHA = 3;
-
 const MAX_DIMENSION = 1000;
+const worker = new Worker('worker.js');
+
+worker.addEventListener('message', (e) => {
+	console.log(`Parent: Got message of type "${e.data.type}"`);
+	if (e.data.type === 'result') {
+		outputImage(e.data);
+	}
+});
 
 window.addEventListener('dragover', (e) => {
 	e.preventDefault();
@@ -69,8 +72,7 @@ const handleFile = (file) => {
 	return Promise.resolve(file)
 		.then(getDataURLFromFile)
 		.then(getImageFromDataURL)
-		.then(processImage)
-		.then(outputImage);
+		.then(processImage);
 };
 
 /**
@@ -102,7 +104,6 @@ const getImageFromDataURL = (dataURL) => {
  */
 const processImage = (image) => {
 	const amount = getAmount();
-	const amountAbs = Math.abs(amount);
 	const imageWidth = image.width;
 	const imageHeight = image.height;
 	const resize = imageWidth > MAX_DIMENSION || imageHeight > MAX_DIMENSION;
@@ -119,32 +120,39 @@ const processImage = (image) => {
 	ctx.drawImage(image, 0, 0, width, height);
 	const getIndex = (x, y) => 4 * (y * width + x);
 	const imageData = ctx.getImageData(0, 0, width, height);
-	const original = imageData.data;
-	const copy = [...original];
-	for (let x = amountAbs; x < width - amountAbs; x++) {
-		for (let y = 0; y < height; y++) {
-			const i = getIndex(x, y);
-			original[i + CHANNEL_RED] = copy[getIndex(x - amount, y) + CHANNEL_RED];
-			original[i + CHANNEL_GREEN] = copy[i + CHANNEL_GREEN];
-			original[i + CHANNEL_BLUE] = copy[getIndex(x + amount, y) + CHANNEL_BLUE];
-			original[i + CHANNEL_ALPHA] = copy[i + CHANNEL_ALPHA];
-		}
-	}
-	ctx.clearRect(0, 0, width, height);
-	ctx.putImageData(imageData, 0, 0);
-	const newImage = new Image();
-	newImage.src = canvas.toDataURL();
-	return new Promise((resolve) => {
-		newImage.addEventListener('load', () => {
-			resolve(newImage);
-		});
+	worker.postMessage({
+		type: 'filter',
+		data: imageData.data,
+		options: {
+			width,
+			height,
+			amount,
+		},
 	});
+};
+
+const copyData = (source, dest) => {
+	for (let i = 0; i < source.length; i++) {
+		dest[i] = source[i];
+	}
 };
 
 /**
  * @param {Image} image
  */
-const outputImage = (image) => {
+const outputImage = (data) => {
+	const options = data.options;
+	const width = options.width;
+	const height = options.height;
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext('2d');
+	const imageData = new ImageData(width, height);
+	copyData(data.data, imageData.data);
+	ctx.putImageData(imageData, 0, 0);
+	const image = new Image();
+	image.src = canvas.toDataURL();
 	document.querySelector('#output').appendChild(image);
 };
 
