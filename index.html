@@ -84,12 +84,14 @@ const getDataURLFromFile = (file) => (
 
 /**
  * @param {string} dataURL
- * @returns {Image}
+ * @returns {Promise<Image>}
  */
 const getImageFromDataURL = (dataURL) => {
 	const image = new Image();
-	image.src = dataURL;
-	return image;
+	return new Promise((resolve) => {
+		image.addEventListener('load', () => resolve(image));
+		image.src = dataURL;
+	});
 };
 
 /**
